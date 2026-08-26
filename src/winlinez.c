@@ -1024,10 +1024,11 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
     HDC hdc;
 
     switch (msg) {
-    case WM_GETMINMAXINFO: {                    /* cap at 620x420 */
+    case WM_GETMINMAXINFO: {                    /* min size 620x420 (0x4118xx:
+                                                    MINMAXINFO+0x18 = ptMinTrackSize) */
         MINMAXINFO *mmi = (MINMAXINFO *)lp;
-        mmi->ptMaxTrackSize.x = WIN_W;
-        mmi->ptMaxTrackSize.y = WIN_H;
+        mmi->ptMinTrackSize.x = WIN_W;
+        mmi->ptMinTrackSize.y = WIN_H;
         return 0;
     }
 
