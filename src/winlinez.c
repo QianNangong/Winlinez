@@ -21,8 +21,8 @@
 /*  Constants                                                          */
 /* ------------------------------------------------------------------ */
 
-#define APP_CLASS     "LinezWindow"          /* 0x420020 */
-#define APP_TITLE     "Color linez"          /* 0x420090 */
+#define APP_CLASS     TEXT("LinezWindow")          /* 0x420020 */
+#define APP_TITLE     TEXT("Color linez")          /* 0x420090 */
 
 #define BOARD_W       9
 #define BOARD_H       9
@@ -98,7 +98,7 @@ static int        g_kingBarH;             /* 0x43017C king bar fill   */
 static int        g_crownFrame;           /* 0x430180 crown anim      */
 static BOOL       g_kingDown;             /* 0x430184 king defeated   */
 
-static char       g_myName[16];           /* 0x42002C player label    */
+static TCHAR      g_myName[16];           /* 0x42002C player label    */           /* 0x42002C player label    */
 
 static char       g_hiscName[HISCORES][NAME_LEN + 1];  /* 0x430188    */
 static WORD       g_hiscScore[HISCORES];               /* 0x430196    */
@@ -145,19 +145,38 @@ static int Rand(int n)
 static void Srand(DWORD seed) { g_rngSeed = seed; }
 
 /* FUN_004100A8 */
-static void Itoa(int val, char *buf)
+static void Itoa(int val, TCHAR *buf)
 {
-    char tmp[16];
-    int  div = 1000000000, i = 0, started = 0;
-    if (val == 0) { buf[0] = '0'; buf[1] = '\0'; return; }
+    TCHAR tmp[16];
+    int   div = 1000000000, i = 0, started = 0;
+    if (val == 0) { buf[0] = TEXT('0'); buf[1] = TEXT('\0'); return; }
     while (div > 0) {
         int d = val / div;
         val %= div;
-        if (d != 0 || started) { tmp[i++] = (char)('0' + d); started = 1; }
+        if (d != 0 || started) { tmp[i++] = (TCHAR)(TEXT('0') + d); started = 1; }
         div /= 10;
     }
-    tmp[i] = '\0';
-    lstrcpyA(buf, tmp);
+    tmp[i] = TEXT('\0');
+    lstrcpy(buf, tmp);
+}
+
+/* hiscore records are stored as ANSI bytes in winlines.res; convert
+ * between the file charset and the display charset */
+static void AcpToT(const char *src, TCHAR *dst, int dstMax)
+{
+#ifdef UNICODE
+    MultiByteToWideChar(CP_ACP, 0, src, -1, dst, dstMax);
+#else
+    lstrcpyA(dst, src);
+#endif
+}
+static void TToAcp(const TCHAR *src, char *dst, int dstMax)
+{
+#ifdef UNICODE
+    WideCharToMultiByte(CP_ACP, 0, src, -1, dst, dstMax, NULL, NULL);
+#else
+    lstrcpyA(dst, src);
+#endif
 }
 
 /* ------------------------------------------------------------------ */
@@ -277,7 +296,7 @@ static void DrawScoreBox(HDC hdc, int x, int y, int value)
 {
     RECT   rc;
     HPEN   hLight, hShadow;
-    char   buf[16];
+    TCHAR  buf[16];
 
     rc.left  = x + 4;  rc.right  = x + 0x44;
     rc.top   = y + 4;  rc.bottom = y + 0x14;
@@ -299,7 +318,7 @@ static void DrawScoreBox(HDC hdc, int x, int y, int value)
     SetBkMode(hdc, TRANSPARENT);
     Itoa(value, buf);
     rc.right -= 8;                       /* 0x410E49: text right inset */
-    DrawTextA(hdc, buf, -1, &rc, DT_RIGHT | DT_SINGLELINE | DT_VCENTER);
+    DrawText(hdc, buf, -1, &rc, DT_RIGHT | DT_SINGLELINE | DT_VCENTER);
 }
 
 /* FUN_00410E5A - gray top bar with embossed captions */
@@ -330,18 +349,18 @@ static void DrawTopBar(HWND hwnd, HDC hdc)
     rc.left = g_nextX - 0x4F; rc.right = g_nextX - 0xF;
     rc.top  = 15;             rc.bottom = 31;
     SetTextColor(hdc, GetSysColor(COLOR_3DSHADOW));
-    DrawTextA(hdc, "Next", -1, &rc, DT_RIGHT);
+    DrawText(hdc, TEXT("Next"), -1, &rc, DT_RIGHT);
     rc.top--; rc.right--;
     SetTextColor(hdc, RGB(255, 255, 255));
-    DrawTextA(hdc, "Next", -1, &rc, DT_RIGHT);
+    DrawText(hdc, TEXT("Next"), -1, &rc, DT_RIGHT);
 
     SetTextColor(hdc, GetSysColor(COLOR_3DSHADOW));
     rc.left = g_nextX + 0x7D; rc.right = g_nextX + 0xBD;
     rc.top  = 15;             rc.bottom = 31;
-    DrawTextA(hdc, "Colors", -1, &rc, DT_LEFT);
+    DrawText(hdc, TEXT("Colors"), -1, &rc, DT_LEFT);
     rc.top--; rc.left--;
     SetTextColor(hdc, RGB(255, 255, 255));
-    DrawTextA(hdc, "Colors", -1, &rc, DT_LEFT);
+    DrawText(hdc, TEXT("Colors"), -1, &rc, DT_LEFT);
 
     /* the king's target score, boxed at the left edge (0x41102A) */
     DrawScoreBox(hdc, 0x18, 10, (int)g_target);
@@ -379,7 +398,7 @@ static void DrawPlayerBar(HDC hdc, BOOL drawLabel)
         rc.top  = g_barY + 8;  rc.bottom = g_barY + 24;
         SetTextColor(hdc, RGB(255, 255, 255));
         FillRect(hdc, &rc, GetStockObject(BLACK_BRUSH));
-        DrawTextA(hdc, g_myName, -1, &rc, DT_CENTER | DT_SINGLELINE);
+        DrawText(hdc, g_myName, -1, &rc, DT_CENTER | DT_SINGLELINE);
     }
     BitBlt(hdc, g_barX - 1, g_barY - 234 + g_myBarH, 72, 100,
            g_hMemDC, g_myFrame * SPR_KING_W + 1, SPR_PORTR_Y, SRCCOPY);
@@ -398,7 +417,7 @@ static void DrawKingBar(HDC hdc, BOOL drawLabel, BOOL drawKing)
         rc.top  = g_bar2Y + 8;  rc.bottom = g_bar2Y + 24;
         SetTextColor(hdc, RGB(255, 255, 255));
         FillRect(hdc, &rc, GetStockObject(BLACK_BRUSH));
-        DrawTextA(hdc, "Pretender", -1, &rc, DT_CENTER | DT_SINGLELINE);
+        DrawText(hdc, TEXT("Pretender"), -1, &rc, DT_CENTER | DT_SINGLELINE);
     }
     if (g_crownFrame == 0 || drawKing)
         BitBlt(hdc, g_bar2X - 10, g_bar2Y - 234 + g_kingBarH, 72, 100,
@@ -655,7 +674,7 @@ static void AddBall(HDC hdc)
         }
 found:
         if (x > 8 || y > 8) {
-            MessageBoxA(NULL, "Report me!", "Error", MB_OK);
+            MessageBox(NULL, TEXT("Report me!"), TEXT("Error"), MB_OK);
             return;
         }
         g_board[y][x] = g_next[0];
@@ -704,7 +723,7 @@ static void ResetKings(HDC hdc)
     int i;
 
     if (g_kingDown) {
-        lstrcpyA(g_myName, "Pretender");       /* 0x41153A: name reset */
+        lstrcpy(g_myName, TEXT("Pretender"));  /* 0x41153A: name reset */
         SaveHiscores();
         g_target = g_score;
         DrawPlayerBar(hdc, TRUE);
@@ -768,7 +787,7 @@ static void LoadHiscores(void)
         _lclose(hf);
     }
     g_target = g_hiscScore[0];
-    lstrcpyA(g_myName, g_hiscName[0]);          /* player label = top name */
+    AcpToT(g_hiscName[0], g_myName, 16);       /* player label = top name */
     g_hiscDirty = FALSE;
 }
 
@@ -806,10 +825,10 @@ static void CheckHiscore(HWND hwnd)
         lstrcpyA(g_hiscName[i], g_hiscName[i - 1]);
         g_hiscScore[i] = g_hiscScore[i - 1];
     }
-    DialogBoxParamA(g_hInst, MAKEINTRESOURCEA(IDD_NAME), hwnd, NameDlgProc, 0);
-    lstrcpyA(g_hiscName[idx], g_myName);
+    DialogBoxParam(g_hInst, MAKEINTRESOURCE(IDD_NAME), hwnd, NameDlgProc, 0);
+    TToAcp(g_myName, g_hiscName[idx], NAME_LEN + 1);
     g_hiscScore[idx] = (WORD)g_score;
-    DialogBoxParamA(g_hInst, MAKEINTRESOURCEA(IDD_SCORES), hwnd, ScoresDlgProc, 0);
+    DialogBoxParam(g_hInst, MAKEINTRESOURCE(IDD_SCORES), hwnd, ScoresDlgProc, 0);
 }
 
 /* ------------------------------------------------------------------ */
@@ -850,11 +869,11 @@ static INT_PTR CALLBACK ScoresDlgProc(HWND hdlg, UINT msg, WPARAM wp, LPARAM lp)
     case WM_PAINT: {
         PAINTSTRUCT ps;
         HDC    hdc  = BeginPaint(hdlg, &ps);
-        HFONT  font = CreateFontA(18, 0, 0, 0, FW_NORMAL, 0, 0, 0, 0, 0, 0, 0, 0,
-                                  "MS Sans Serif");
+        HFONT  font = CreateFont(18, 0, 0, 0, FW_NORMAL, 0, 0, 0, 0, 0, 0, 0, 0,
+                                 TEXT("MS Sans Serif"));
         HGDIOBJ old = SelectObject(hdc, font);
         RECT rc;
-        char buf[64], num[16];
+        TCHAR buf[64], num[16], nameT[16];
         int  i;
 
         SetBkMode(hdc, TRANSPARENT);
@@ -864,11 +883,12 @@ static INT_PTR CALLBACK ScoresDlgProc(HWND hdlg, UINT msg, WPARAM wp, LPARAM lp)
         for (i = 0; i < HISCORES; i++) {
             rc.bottom = rc.top + 16;
             Itoa(i + 1, buf);
-            lstrcatA(buf, ". ");
-            lstrcatA(buf, g_hiscName[i]);
-            DrawTextA(hdc, buf, -1, &rc, DT_LEFT);
+            lstrcat(buf, TEXT(". "));
+            AcpToT(g_hiscName[i], nameT, 16);
+            lstrcat(buf, nameT);
+            DrawText(hdc, buf, -1, &rc, DT_LEFT);
             Itoa(g_hiscScore[i], num);
-            DrawTextA(hdc, num, -1, &rc, DT_RIGHT);
+            DrawText(hdc, num, -1, &rc, DT_RIGHT);
             rc.top += 16;
         }
         SelectObject(hdc, old);
@@ -891,32 +911,32 @@ static INT_PTR CALLBACK NameDlgProc(HWND hdlg, UINT msg, WPARAM wp, LPARAM lp)
     switch (msg) {
     case WM_INITDIALOG:
         CenterDlg(hdlg);
-        SetDlgItemTextA(hdlg, IDC_NAME, "Pretender");
+        SetDlgItemText(hdlg, IDC_NAME, TEXT("Pretender"));
         return TRUE;
     case WM_CLOSE:                              /* original quirk: X behaves
                                                    like pressing Ok */
     case WM_COMMAND:
         if (LOWORD(wp) == IDOK || msg == WM_CLOSE) {
-            char name[20];
+            TCHAR name[20];
             int  len, i;
 
-            GetDlgItemTextA(hdlg, IDC_NAME, name, 16);
-            len = lstrlenA(name);
+            GetDlgItemText(hdlg, IDC_NAME, name, 16);
+            len = lstrlen(name);
             if (len == 0) {
-                MessageBoxA(hdlg, "You must enter some name", "Error", MB_OK);
+                MessageBox(hdlg, TEXT("You must enter some name"), TEXT("Error"), MB_OK);
                 return TRUE;
             }
             if (len >= 14) {
-                MessageBoxA(hdlg, "Name too long", "Error", MB_OK);
+                MessageBox(hdlg, TEXT("Name too long"), TEXT("Error"), MB_OK);
                 return TRUE;
             }
             for (i = 0; i < len; i++)
                 if (name[i] & 0x80) {
-                    MessageBoxA(hdlg, "You can use only latin characters",
-                                "Error", MB_OK);
+                    MessageBox(hdlg, TEXT("You can use only latin characters"),
+                               TEXT("Error"), MB_OK);
                     return TRUE;
                 }
-            lstrcpyA(g_myName, name);
+            lstrcpy(g_myName, name);
             EndDialog(hdlg, 0);
             return TRUE;
         }
@@ -932,8 +952,8 @@ static INT_PTR CALLBACK AboutDlgProc(HWND hdlg, UINT msg, WPARAM wp, LPARAM lp)
     case WM_PAINT: {
         PAINTSTRUCT ps;
         HDC     hdc  = BeginPaint(hdlg, &ps);
-        HBITMAP bmp  = LoadBitmapA(g_hInst, MAKEINTRESOURCEA(IDB_ABOUT_KING));
-        HBITMAP mask = LoadBitmapA(g_hInst, MAKEINTRESOURCEA(IDB_ABOUT_MASK));
+        HBITMAP bmp  = LoadBitmap(g_hInst, MAKEINTRESOURCE(IDB_ABOUT_KING));
+        HBITMAP mask = LoadBitmap(g_hInst, MAKEINTRESOURCE(IDB_ABOUT_MASK));
         HDC     mem  = CreateCompatibleDC(hdc);
         HGDIOBJ old  = SelectObject(mem, mask);
         BitBlt(hdc, 10, 32, 67, 50, mem, 0, 0, SRCAND);
@@ -971,11 +991,11 @@ static INT_PTR CALLBACK StatsDlgProc(HWND hdlg, UINT msg, WPARAM wp, LPARAM lp)
         PAINTSTRUCT ps;
         HDC    hdc  = BeginPaint(hdlg, &ps);
         int    cnt[BALL_MAX + 1] = {0};
-        HFONT  font = CreateFontA(16, 0, 0, 0, FW_NORMAL, 0, 0, 0, 0, 0, 0, 0, 0,
-                                  "MS Sans Serif");
+        HFONT  font = CreateFont(16, 0, 0, 0, FW_NORMAL, 0, 0, 0, 0, 0, 0, 0, 0,
+                                 TEXT("MS Sans Serif"));
         HGDIOBJ old = SelectObject(hdc, font);
         RECT rc;
-        char buf[64], num[16];
+        TCHAR buf[64], num[16], nameT[16];
         int  c, x, y;
 
         for (y = 0; y < BOARD_H; y++)
@@ -991,17 +1011,17 @@ static INT_PTR CALLBACK StatsDlgProc(HWND hdlg, UINT msg, WPARAM wp, LPARAM lp)
             BitBlt(hdc, rc.left - 0x2C, rc.top, CELL, CELL,
                    g_hMemDC, c * CELL, SPR_CELL_Y, SRCCOPY);
             Itoa(cnt[c], buf);
-            lstrcatA(buf, " (");
+            lstrcat(buf, TEXT(" ("));
             Itoa(cnt[c] * 100 / (BOARD_W * BOARD_H), num);
-            lstrcatA(buf, num);
-            lstrcatA(buf, "%)");
+            lstrcat(buf, num);
+            lstrcat(buf, TEXT("%)"));
             if (c != 0) {
-                lstrcatA(buf, ", del-");
+                lstrcat(buf, TEXT(", del-"));
                 Itoa(g_colorStat[c], num);
-                lstrcatA(buf, num);
+                lstrcat(buf, num);
             }
-            lstrcatA(buf, "          ");
-            DrawTextA(hdc, buf, -1, &rc, DT_SINGLELINE);
+            lstrcat(buf, TEXT("          "));
+            DrawText(hdc, buf, -1, &rc, DT_SINGLELINE);
             rc.top    += CELL;
             rc.bottom += CELL;
         }
@@ -1221,7 +1241,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
             return 0;
         }
         ReleaseDC(hwnd, hdc);
-        MessageBoxA(hwnd, "Game over!", APP_TITLE, MB_ICONWARNING);
+        MessageBox(hwnd, TEXT("Game over!"), APP_TITLE, MB_ICONWARNING);
         CheckHiscore(hwnd);
         hdc = GetDC(hwnd);
         ResetKings(hdc);
@@ -1239,7 +1259,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
             ReleaseDC(hwnd, hdc);
             return 0;
         case CM_SCORES:
-            DialogBoxParamA(g_hInst, MAKEINTRESOURCEA(IDD_SCORES), hwnd,
+            DialogBoxParam(g_hInst, MAKEINTRESOURCE(IDD_SCORES), hwnd,
                             ScoresDlgProc, 0);
             return 0;
         case CM_EXIT:
@@ -1259,25 +1279,25 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
                 if (g_hStatWnd) DestroyWindow(g_hStatWnd);
                 g_hStatWnd = NULL;
             } else {
-                g_hStatWnd = CreateDialogParamA(g_hInst,
-                                MAKEINTRESOURCEA(IDD_STATS), hwnd,
+                g_hStatWnd = CreateDialogParam(g_hInst,
+                                MAKEINTRESOURCE(IDD_STATS), hwnd,
                                 StatsDlgProc, 0);
             }
             CheckMenuItem(GetMenu(hwnd), CM_STATS,
                           g_statVisible ? MF_CHECKED : MF_UNCHECKED);
             return 0;
         case CM_RULES:
-            DialogBoxParamA(g_hInst, MAKEINTRESOURCEA(IDD_RULES), hwnd,
+            DialogBoxParam(g_hInst, MAKEINTRESOURCE(IDD_RULES), hwnd,
                             RulesDlgProc, 0);
             return 0;
         case CM_ABOUT:
-            DialogBoxParamA(g_hInst, MAKEINTRESOURCEA(IDD_ABOUT), hwnd,
+            DialogBoxParam(g_hInst, MAKEINTRESOURCE(IDD_ABOUT), hwnd,
                             AboutDlgProc, 0);
             return 0;
         }
         break;
     }
-    return DefWindowProcA(hwnd, msg, wp, lp);
+    return DefWindowProc(hwnd, msg, wp, lp);
 }
 
 /* ------------------------------------------------------------------ */
@@ -1286,7 +1306,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR cmdLine, int nCmdShow)
 {
-    WNDCLASSA wc;
+    WNDCLASS  wc;
     HWND      hwnd;
     MSG       msg;
 
@@ -1296,32 +1316,32 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR cmdLine, int nCmdShow
     wc.cbClsExtra    = 0;
     wc.cbWndExtra    = 0;
     wc.hInstance     = hInst;
-    wc.hIcon         = LoadIconA(hInst, MAKEINTRESOURCEA(IDI_ICON1));
-    wc.hCursor       = LoadCursorA(NULL, IDC_ARROW);
+    wc.hIcon         = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
+    wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
     wc.hbrBackground = GetStockObject(BLACK_BRUSH);
-    wc.lpszMenuName  = MAKEINTRESOURCEA(IDR_MENU1);
+    wc.lpszMenuName  = MAKEINTRESOURCE(IDR_MENU1);
     wc.lpszClassName = APP_CLASS;
-    if (!RegisterClassA(&wc)) return 0;
+    if (!RegisterClass(&wc)) return 0;
 
     g_screenW = GetSystemMetrics(SM_CXSCREEN);
     g_screenH = GetSystemMetrics(SM_CYSCREEN);
 
-    hwnd = CreateWindowExA(0, APP_CLASS, APP_TITLE,
+    hwnd = CreateWindowEx(0, APP_CLASS, APP_TITLE,
                            WS_OVERLAPPEDWINDOW,          /* 0xCF0000 */
                            (g_screenW - WIN_W) / 2, (g_screenH - WIN_H) / 2,
                            WIN_W, WIN_H,
                            NULL, NULL, hInst, NULL);
     g_hMainWnd = hwnd;
-    g_hAccel   = LoadAcceleratorsA(hInst, MAKEINTRESOURCEA(IDR_ACCEL1));
+    g_hAccel   = LoadAccelerators(hInst, MAKEINTRESOURCE(IDR_ACCEL1));
     ShowWindow(hwnd, nCmdShow);
     UpdateWindow(hwnd);
 
-    while (GetMessageA(&msg, NULL, 0, 0)) {
-        if (g_hStatWnd && IsDialogMessageA(g_hStatWnd, &msg))
+    while (GetMessage(&msg, NULL, 0, 0)) {
+        if (g_hStatWnd && IsDialogMessage(g_hStatWnd, &msg))
             continue;
-        if (!TranslateAcceleratorA(hwnd, g_hAccel, &msg)) {
+        if (!TranslateAccelerator(hwnd, g_hAccel, &msg)) {
             TranslateMessage(&msg);
-            DispatchMessageA(&msg);
+            DispatchMessage(&msg);
         }
     }
     return (int)msg.wParam;

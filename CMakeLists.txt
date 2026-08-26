@@ -38,6 +38,8 @@ endif()
 project(ColorLinez C)
 enable_language(RC)
 
+option(COLORLINEZ_UNICODE "Use Unicode (W) APIs for all text" ON)
+
 # ---------------------------------------------------------------------------
 # The game
 # ---------------------------------------------------------------------------
@@ -58,6 +60,10 @@ if(MINGW)
     target_link_options(winlinez PRIVATE -mwindows)
 elseif(MSVC)
     target_link_options(winlinez PRIVATE "/SUBSYSTEM:WINDOWS")
+endif()
+
+if(COLORLINEZ_UNICODE)
+    target_compile_definitions(winlinez PRIVATE UNICODE _UNICODE)
 endif()
 
 # ---------------------------------------------------------------------------

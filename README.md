@@ -67,6 +67,12 @@ cmake --build build
 | `x86_64`             | `mingw` / `llvm-mingw`        | wine + Windows          |
 | `aarch64`            | `llvm-mingw`                  | compile-only            |
 
+`COLORLINEZ_UNICODE` (default `ON`) selects the text API: `ON` builds
+against the wide-character (`W`) functions with `UNICODE`/`_UNICODE`
+defined, `OFF` keeps the original's ANSI (`A`) calls.  The source is
+TCHAR-based, so both modes build from the same code; the `winlines.res`
+hiscore file stays ANSI-encoded in either mode.
+
 llvm-mingw must be in `PATH`; alternatively point CMake at the compilers
 directly (`-DCMAKE_C_COMPILER=... -DCMAKE_RC_COMPILER=...`).  Output:
 `build/winlinez.exe` — runs natively on Windows, or under Wine on Unix

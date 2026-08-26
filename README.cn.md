@@ -64,6 +64,11 @@ cmake --build build
 | `x86_64`             | `mingw` / `llvm-mingw`        | wine + Windows 实测     |
 | `aarch64`            | `llvm-mingw`                  | 仅编译验证              |
 
+`COLORLINEZ_UNICODE`（默认 `ON`）选择文本 API：`ON` 定义
+`UNICODE`/`_UNICODE` 并链接宽字符（`W`）函数；`OFF` 保持原版的 ANSI
+（`A`）调用。源码为 TCHAR 写法，两种模式共用同一份代码；
+`winlines.res` 高分档文件在两种模式下均保持 ANSI 编码。
+
 llvm-mingw 需要在 `PATH` 中；也可以直接指定编译器
 （`-DCMAKE_C_COMPILER=... -DCMAKE_RC_COMPILER=...`）。产物：
 `build/winlinez.exe`——Windows 原生运行，Unix 下用
