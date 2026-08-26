@@ -1,24 +1,38 @@
 cmake_minimum_required(VERSION 3.15)
 
 # ---------------------------------------------------------------------------
-# Unix convenience: auto-detect an i686 MinGW cross compiler so a plain
+# Unix convenience: pick a Windows cross compiler so a plain
 #   cmake -B build
-# works out of the box.  Otherwise pass a toolchain file:
-#   cmake -B build -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.toolchain.cmake
+# works out of the box.  Select the target with
+#   cmake -B build -DCOLORLINEZ_ARCH=x86_64 -DCOLORLINEZ_TOOLCHAIN=llvm-mingw
+# ARCH    : i686 (default) | x86_64 | aarch64
+# TOOLCHAIN: mingw (default, system gcc) | llvm-mingw
+# aarch64 is build-only (no wine test environment for it here).
 # ---------------------------------------------------------------------------
+set(COLORLINEZ_ARCH "i686" CACHE STRING "Target architecture: i686 | x86_64 | aarch64")
+set_property(CACHE COLORLINEZ_ARCH PROPERTY STRINGS i686 x86_64 aarch64)
+set(COLORLINEZ_TOOLCHAIN "mingw" CACHE STRING "mingw | llvm-mingw")
+set_property(CACHE COLORLINEZ_TOOLCHAIN PROPERTY STRINGS mingw llvm-mingw)
+
 if(NOT WIN32 AND NOT DEFINED CMAKE_C_COMPILER)
-    find_program(MINGW_I686_GCC i686-w64-mingw32-gcc)
-    if(MINGW_I686_GCC)
-        set(CMAKE_SYSTEM_NAME Windows)
-        set(CMAKE_C_COMPILER     i686-w64-mingw32-gcc)
-        set(CMAKE_RC_COMPILER    i686-w64-mingw32-windres)
-        message(STATUS "Cross-building for Win32 with ${MINGW_I686_GCC}")
+    if(COLORLINEZ_TOOLCHAIN STREQUAL "llvm-mingw")
+        set(_cc ${COLORLINEZ_ARCH}-w64-mingw32-clang)
+        set(_rc ${COLORLINEZ_ARCH}-w64-mingw32-windres)
     else()
-        message(FATAL_ERROR
-            "No Windows compiler found. Install mingw-w64 (i686 target), e.g.:\n"
-            "  Debian/Ubuntu: apt install gcc-mingw-w64-i686\n"
-            "  or configure with: -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.toolchain.cmake")
+        set(_cc ${COLORLINEZ_ARCH}-w64-mingw32-gcc)
+        set(_rc ${COLORLINEZ_ARCH}-w64-mingw32-windres)
     endif()
+    find_program(_cc_path ${_cc})
+    if(NOT _cc_path)
+        message(FATAL_ERROR
+            "'${_cc}' not found in PATH. Install ${COLORLINEZ_TOOLCHAIN} for "
+            "${COLORLINEZ_ARCH}, add it to PATH, or configure with "
+            "-DCMAKE_C_COMPILER=<path> -DCMAKE_RC_COMPILER=<windres path>.")
+    endif()
+    set(CMAKE_SYSTEM_NAME Windows)
+    set(CMAKE_C_COMPILER ${_cc_path})
+    set(CMAKE_RC_COMPILER ${_rc})
+    message(STATUS "Cross-building Win32 ${COLORLINEZ_ARCH} (${COLORLINEZ_TOOLCHAIN}) with ${CMAKE_C_COMPILER}")
 endif()
 
 project(ColorLinez C)
@@ -60,7 +74,9 @@ target_include_directories(inflate_test PRIVATE src)
 
 enable_testing()
 find_program(WINE_EXECUTABLE wine)
-if(WINE_EXECUTABLE AND CMAKE_CROSSCOMPILING)
+if(COLORLINEZ_ARCH STREQUAL "aarch64")
+    message(STATUS "aarch64 target: build-only (no wine test environment for it here)")
+elseif(WINE_EXECUTABLE AND CMAKE_CROSSCOMPILING)
     add_test(NAME inflate_crc COMMAND ${WINE_EXECUTABLE} $<TARGET_FILE:inflate_test>)
 else()
     add_test(NAME inflate_crc COMMAND inflate_test)

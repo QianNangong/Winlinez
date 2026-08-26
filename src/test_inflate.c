@@ -30,7 +30,7 @@ int main(void)
         return 1;
     }
     crc = crc32_buf(out, n);
-    printf("inflated %lu bytes, crc32=%08lx\n", (unsigned long)n, (unsigned)crc);
+    printf("inflated %lu bytes, crc32=%08lx\n", (unsigned long)n, crc);
     if (n != 300598UL || crc != 0xCD043A57UL) {
         printf("MISMATCH (expected 300598 bytes / crc32 cd043a57)\n");
         return 1;

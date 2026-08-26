@@ -127,8 +127,8 @@ static void NewGame(HDC hdc);
 static void ResetKings(HDC hdc);
 void        SaveHiscores(void);
 static void CheckHiscore(HWND hwnd);
-static BOOL CALLBACK NameDlgProc(HWND, UINT, WPARAM, LPARAM);
-static BOOL CALLBACK ScoresDlgProc(HWND, UINT, WPARAM, LPARAM);
+static INT_PTR CALLBACK NameDlgProc(HWND, UINT, WPARAM, LPARAM);
+static INT_PTR CALLBACK ScoresDlgProc(HWND, UINT, WPARAM, LPARAM);
 
 /* ------------------------------------------------------------------ */
 /*  Mini runtime (the original shipped without the CRT)                */
@@ -817,7 +817,7 @@ static void CheckHiscore(HWND hwnd)
 /* ------------------------------------------------------------------ */
 
 /* shared tail of every modal dialog (WM_INITDIALOG) */
-static BOOL CenterDlg(HWND hdlg)
+static INT_PTR CenterDlg(HWND hdlg)
 {
     RECT rc;
     SetFocus(hdlg);
@@ -830,7 +830,7 @@ static BOOL CenterDlg(HWND hdlg)
 }
 
 /* FUN_004121B5 - "Rules" */
-static BOOL CALLBACK RulesDlgProc(HWND hdlg, UINT msg, WPARAM wp, LPARAM lp)
+static INT_PTR CALLBACK RulesDlgProc(HWND hdlg, UINT msg, WPARAM wp, LPARAM lp)
 {
     switch (msg) {
     case WM_INITDIALOG: return CenterDlg(hdlg);
@@ -844,7 +844,7 @@ static BOOL CALLBACK RulesDlgProc(HWND hdlg, UINT msg, WPARAM wp, LPARAM lp)
 
 /* FUN_00412279 - "High Scores"; the list box is only a frame, the ten
  * records are painted straight onto the dialog. */
-static BOOL CALLBACK ScoresDlgProc(HWND hdlg, UINT msg, WPARAM wp, LPARAM lp)
+static INT_PTR CALLBACK ScoresDlgProc(HWND hdlg, UINT msg, WPARAM wp, LPARAM lp)
 {
     switch (msg) {
     case WM_PAINT: {
@@ -886,7 +886,7 @@ static BOOL CALLBACK ScoresDlgProc(HWND hdlg, UINT msg, WPARAM wp, LPARAM lp)
 }
 
 /* FUN_00412454 - name entry after a new high score */
-static BOOL CALLBACK NameDlgProc(HWND hdlg, UINT msg, WPARAM wp, LPARAM lp)
+static INT_PTR CALLBACK NameDlgProc(HWND hdlg, UINT msg, WPARAM wp, LPARAM lp)
 {
     switch (msg) {
     case WM_INITDIALOG:
@@ -926,7 +926,7 @@ static BOOL CALLBACK NameDlgProc(HWND hdlg, UINT msg, WPARAM wp, LPARAM lp)
 }
 
 /* FUN_0041260F - "About": masked-blit of the two king portraits */
-static BOOL CALLBACK AboutDlgProc(HWND hdlg, UINT msg, WPARAM wp, LPARAM lp)
+static INT_PTR CALLBACK AboutDlgProc(HWND hdlg, UINT msg, WPARAM wp, LPARAM lp)
 {
     switch (msg) {
     case WM_PAINT: {
@@ -956,7 +956,7 @@ static BOOL CALLBACK AboutDlgProc(HWND hdlg, UINT msg, WPARAM wp, LPARAM lp)
 }
 
 /* FUN_0041277C - modeless "Statistics": ball census per colour */
-static BOOL CALLBACK StatsDlgProc(HWND hdlg, UINT msg, WPARAM wp, LPARAM lp)
+static INT_PTR CALLBACK StatsDlgProc(HWND hdlg, UINT msg, WPARAM wp, LPARAM lp)
 {
     switch (msg) {
     case WM_INITDIALOG: {
@@ -1297,7 +1297,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR cmdLine, int nCmdShow
     wc.cbWndExtra    = 0;
     wc.hInstance     = hInst;
     wc.hIcon         = LoadIconA(hInst, MAKEINTRESOURCEA(IDI_ICON1));
-    wc.hCursor       = LoadCursorA(NULL, MAKEINTRESOURCEA(IDC_ARROW));
+    wc.hCursor       = LoadCursorA(NULL, IDC_ARROW);
     wc.hbrBackground = GetStockObject(BLACK_BRUSH);
     wc.lpszMenuName  = MAKEINTRESOURCEA(IDR_MENU1);
     wc.lpszClassName = APP_CLASS;

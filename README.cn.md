@@ -42,23 +42,32 @@ color-linez/
 
 ## 构建
 
-需要 32 位 Windows 编译器（推荐 MinGW-w64 i686；MSVC 也可）。在
-Linux/Unix 上安装 `gcc-mingw-w64-i686` 后 CMake 会自动探测：
+需要 Windows 交叉编译器或原生编译器：MinGW-w64（系统包）或
+[llvm-mingw](https://github.com/mstorsjo/llvm-mingw)。在装好 mingw-w64
+的 Linux/Unix 上，CMake 会自动探测：
 
 ```sh
 cmake -B build
 cmake --build build
 ```
 
-显式指定工具链（可选）：
+通过两个缓存选项选择目标架构与工具链：
 
 ```sh
-cmake -B build -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.toolchain.cmake
+cmake -B build -DCOLORLINEZ_ARCH=x86_64 -DCOLORLINEZ_TOOLCHAIN=llvm-mingw
 cmake --build build
 ```
 
-产物：`build/winlinez.exe`（Windows 原生运行，Unix 下可用
-`wine build/winlinez.exe` 运行）。
+| `COLORLINEZ_ARCH`    | `COLORLINEZ_TOOLCHAIN`        | 验证方式                |
+|----------------------|-------------------------------|-------------------------|
+| `i686`（默认）       | `mingw`（默认）/ `llvm-mingw` | wine + Windows 实测     |
+| `x86_64`             | `mingw` / `llvm-mingw`        | wine + Windows 实测     |
+| `aarch64`            | `llvm-mingw`                  | 仅编译验证              |
+
+llvm-mingw 需要在 `PATH` 中；也可以直接指定编译器
+（`-DCMAKE_C_COMPILER=... -DCMAKE_RC_COMPILER=...`）。产物：
+`build/winlinez.exe`——Windows 原生运行，Unix 下用
+`wine build/winlinez.exe` 运行。
 
 ## 测试
 

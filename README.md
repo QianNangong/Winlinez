@@ -45,24 +45,32 @@ color-linez/
 
 ## Build
 
-Requirements: a 32-bit Windows compiler (MinGW-w64 i686 recommended; an
-MSVC toolchain also works). On Linux/Unix, install `gcc-mingw-w64-i686`
-— CMake detects it automatically.
+Requires a Windows cross compiler or a native one: MinGW-w64 (system
+package) or [llvm-mingw](https://github.com/mstorsjo/llvm-mingw).  On
+Linux/Unix with mingw-w64 installed, plain CMake auto-detects it:
 
 ```sh
 cmake -B build
 cmake --build build
 ```
 
-Explicit toolchain (optional):
+Select target architecture and toolchain with two cache options:
 
 ```sh
-cmake -B build -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.toolchain.cmake
+cmake -B build -DCOLORLINEZ_ARCH=x86_64 -DCOLORLINEZ_TOOLCHAIN=llvm-mingw
 cmake --build build
 ```
 
-Output: `build/winlinez.exe` (runs natively on Windows, or under
-Wine on Unix — `wine build/winlinez.exe`).
+| `COLORLINEZ_ARCH`    | `COLORLINEZ_TOOLCHAIN`        | verified via            |
+|----------------------|-------------------------------|-------------------------|
+| `i686` (default)     | `mingw` (default) / `llvm-mingw` | wine + Windows       |
+| `x86_64`             | `mingw` / `llvm-mingw`        | wine + Windows          |
+| `aarch64`            | `llvm-mingw`                  | compile-only            |
+
+llvm-mingw must be in `PATH`; alternatively point CMake at the compilers
+directly (`-DCMAKE_C_COMPILER=... -DCMAKE_RC_COMPILER=...`).  Output:
+`build/winlinez.exe` — runs natively on Windows, or under Wine on Unix
+(`wine build/winlinez.exe`).
 
 ## Test
 
