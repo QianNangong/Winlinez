@@ -35,6 +35,10 @@ add_executable(winlinez
 )
 target_include_directories(winlinez PRIVATE src ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(winlinez PRIVATE gdi32 user32)
+# CMake does not track files referenced from .rc scripts - declare them so
+# editing a bitmap triggers recompilation of the resource object.
+set_source_files_properties(src/winlinez.rc PROPERTIES DEPENDS
+    "res/about_king.bmp;res/about_mask.bmp;res/icon.ico")
 
 if(MINGW)
     target_link_options(winlinez PRIVATE -mwindows)
