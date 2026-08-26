@@ -1,0 +1,121 @@
+// winlinez.rc - resources reconstructed from the original WINLINEZ.EXE
+#include <winres.h>
+#include "resource.h"
+
+IDI_ICON1 ICON "res/icon.ico"
+
+IDB_ABOUT_KING BITMAP "res/about_king.bmp"
+IDB_ABOUT_MASK BITMAP "res/about_mask.bmp"
+
+IDR_MENU1 MENU
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "&New\tF4",              CM_NEW
+        MENUITEM "Show &high scores",     CM_SCORES
+        MENUITEM SEPARATOR
+        MENUITEM "E&xit\tAlt-X",          CM_EXIT
+    END
+    POPUP "&Options"
+    BEGIN
+        MENUITEM "&Next\tF3",             CM_NEXT, CHECKED
+        MENUITEM "Show &statistics\tF5",  CM_STATS
+    END
+    POPUP "&Help", HELP
+    BEGIN
+        MENUITEM "&Rules\tF1",            CM_RULES
+        MENUITEM SEPARATOR
+        MENUITEM "&About ...",            CM_ABOUT
+    END
+END
+
+IDR_ACCEL1 ACCELERATORS
+BEGIN
+    VK_F1,  CM_RULES, VIRTKEY, NOINVERT
+    VK_F3,  CM_NEXT,  VIRTKEY, NOINVERT
+    VK_F4,  CM_NEW,   VIRTKEY, NOINVERT
+    VK_F5,  CM_STATS, VIRTKEY, NOINVERT
+    "X",    CM_EXIT,  VIRTKEY, ALT, NOINVERT
+END
+
+IDD_RULES DIALOG 16, 16, 160, 98
+STYLE 0x80C808C4
+CAPTION "Rules"
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL "", -1, "Button", BS_GROUPBOX | WS_CHILD | WS_VISIBLE, 4, 2, 152, 66
+    CONTROL "The purpose of the game is to score points more than the ""king"" has. Your score will increase when you build up a horizontal, vertical or diagonal line consisting of five or more one-color balls. You can make these lines by moving balls across vacant squares. We wish you success.",
+            -1, "Static", SS_LEFT | WS_CHILD | WS_VISIBLE, 8, 8, 144, 56
+    CONTROL "&Ok", IDOK, "Button", BS_DEFPUSHBUTTON | WS_CHILD | WS_VISIBLE | WS_TABSTOP, 57, 76, 46, 16
+END
+
+IDD_SCORES DIALOG 16, 16, 160, 146
+STYLE 0x80C800C4
+CAPTION "High Scores"
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL "", -1, "Button", BS_GROUPBOX | WS_CHILD | WS_VISIBLE, 4, 4, 152, 106
+    CONTROL "&Ok", IDOK, "Button", BS_PUSHBUTTON | WS_CHILD | WS_VISIBLE | WS_TABSTOP, 57, 120, 46, 16
+END
+
+IDD_NAME DIALOG 32, 32, 160, 58
+STYLE 0x80C800C4
+CAPTION "Congratulations"
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL "", -1, "Button", BS_GROUPBOX | WS_CHILD | WS_VISIBLE, 4, 2, 152, 24
+    CONTROL "Enter you name:", -1, "Static", SS_LEFT | WS_CHILD | WS_VISIBLE, 8, 12, 64, 12
+    CONTROL "", IDC_NAME, "Edit", ES_LEFT | ES_AUTOHSCROLL | WS_BORDER | WS_TABSTOP | WS_CHILD | WS_VISIBLE, 80, 10, 72, 12
+    CONTROL "&Ok", IDOK, "Button", BS_DEFPUSHBUTTON | WS_CHILD | WS_VISIBLE | WS_TABSTOP, 57, 34, 46, 16
+END
+
+IDD_ABOUT DIALOG 16, 16, 176, 196
+STYLE 0x80C800C4
+CAPTION "About"
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL "Original version credits", -1, "Button", BS_GROUPBOX | WS_CHILD | WS_VISIBLE, 4, 4, 168, 66
+    CONTROL "&Ok", IDOK, "Button", BS_PUSHBUTTON | WS_CHILD | WS_VISIBLE | WS_TABSTOP, 64, 172, 46, 16
+    CONTROL "Copyright (c) GAMOS LTD. 1992. Russia", -1, "Static", SS_LEFT | WS_CHILD | WS_VISIBLE, 60, 14, 90, 16
+    CONTROL "Programming: Olga Demina", -1, "Static", SS_LEFT | WS_CHILD | WS_VISIBLE, 60, 34, 90, 8
+    CONTROL "Graphics: Igor Ivkin &", -1, "Static", SS_LEFT | WS_CHILD | WS_VISIBLE, 60, 46, 90, 8
+    CONTROL "Gennady Denisov", -1, "Static", SS_LEFT | WS_CHILD | WS_VISIBLE, 92, 54, 60, 8
+    CONTROL "Credits", -1, "Button", BS_GROUPBOX | WS_CHILD | WS_VISIBLE, 4, 76, 168, 84
+    CONTROL "Win32 programming, advanced graphics:", -1, "Static", SS_LEFT | WS_CHILD | WS_VISIBLE, 10, 88, 156, 8
+    CONTROL "Copyright (c) 1998-1999 Ivan Golubev", -1, "Static", SS_LEFT | WS_CHILD | WS_VISIBLE, 10, 98, 156, 8
+    CONTROL "Special thanks to Andrew Wizard", -1, "Static", SS_LEFT | WS_CHILD | WS_VISIBLE, 10, 112, 156, 8
+    CONTROL "This game was written as a present to my brother's birthday!", -1, "Static", SS_LEFT | WS_CHILD | WS_VISIBLE, 10, 124, 156, 16
+    CONTROL "version 1.21", -1, "Static", SS_LEFT | WS_CHILD | WS_VISIBLE, 10, 144, 156, 8
+END
+
+IDD_STATS DIALOG 0, 80, 144, 0
+EXSTYLE 0x80
+STYLE 0x90C800C4
+CAPTION "Statistics"
+FONT 8, "MS Sans Serif"
+BEGIN
+END
+
+1 VERSIONINFO
+ FILEVERSION 1,21,0,0
+ PRODUCTVERSION 1,21,0,0
+ FILEOS VOS_NT_WINDOWS32
+ FILETYPE VFT_APP
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904E4"
+        BEGIN
+            VALUE "CompanyName",      "m53group"
+            VALUE "FileDescription",  "Color Linez for Win32"
+            VALUE "FileVersion",      "1.21"
+            VALUE "InternalName",     "Color linez"
+            VALUE "LegalCopyright",   "Copyright \251 Ivan Golubev 1998"
+            VALUE "OriginalFilename", "Winlinez.exe"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 0x4E4
+    END
+END
