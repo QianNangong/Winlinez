@@ -1015,6 +1015,20 @@ static BOOL CALLBACK StatsDlgProc(HWND hdlg, UINT msg, WPARAM wp, LPARAM lp)
     return FALSE;
 }
 
+/* Extra fix (not original behaviour): centre the board horizontally in
+ * the client area and vertically between the top bar and the window
+ * bottom for ANY window size.  The original formula,
+ * (clientH-376)/2+46, only centres properly when the window is taller
+ * than its minimum and was measured from WM_SIZE alone - which modern
+ * Windows may deliver after the first paint, leaving the board at (0,0). */
+static void LayoutBoard(int clientW, int clientH)
+{
+    g_boardX = (clientW - BOARD_PIX) / 2;
+    if (g_boardX < 0) g_boardX = 0;
+    g_boardY = TOPBAR_H + (clientH - TOPBAR_H - BOARD_PIX) / 2 - 2;
+    if (g_boardY < 0) g_boardY = 0;
+}
+
 /* ------------------------------------------------------------------ */
 /*  Main window procedure - FUN_0041187E                               */
 /* ------------------------------------------------------------------ */
@@ -1046,6 +1060,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
         g_tick  = 0;
         g_state = 0;
         GetClientRect(hwnd, &rc);
+        LayoutBoard(rc.right, rc.bottom);   /* extra fix: origin before first paint */
         g_scoreX    = rc.right - 0x60;
         g_scoreY    = 10;
         g_nextX     = (rc.right - 0x6C) / 2;
@@ -1081,8 +1096,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
     case WM_SIZE: {
         RECT rc;
         int  half;
-        g_boardX = ((int)(short)LOWORD(lp) - 0x148) / 2;
-        g_boardY = ((int)(short)HIWORD(lp) - 0x178) / 2 + 0x2E;
+        LayoutBoard((int)(short)LOWORD(lp), (int)(short)HIWORD(lp));
         GetClientRect(hwnd, &rc);
         half      = (rc.right - 0x148) / 2;
         g_barY    = (rc.bottom - 0xEA) / 2 + 0xEA;

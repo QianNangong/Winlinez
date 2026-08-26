@@ -88,6 +88,20 @@ Verifies that the embedded sprite blob inflates to the original
   reserved as the path-finder seed marker, the `>7` flood-mark wipe,
   per-colour statistics credited to the last removed colour, ...).
 
+### Intentional deviations from the original
+
+1. **Board centring** – the board origin is (re)computed in both
+   `WM_CREATE` and `WM_SIZE` and centres the board between the top bar
+   and the window bottom for any window size.  The original derives it
+   from `WM_SIZE` alone and clamps it under the top bar when the window
+   sits at its minimum height (visible on Windows 10; fine on XP/Wine).
+2. `WM_PAINT` fills the client with black before drawing, and a failed
+   move invalidates the window - modern Windows may expose stale pixels
+   otherwise.
+3. `res/about_king.bmp` / `res/about_mask.bmp` are standard
+   3.00-format BMP files (the original PE stores bare DIBs, which
+   MSVC's rc.exe rejects and windres re-encodes incorrectly).
+
 Differences worth knowing about are documented in `src/winlinez.c`
 header comments and the fix log below.
 
