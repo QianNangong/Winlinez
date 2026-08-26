@@ -78,6 +78,28 @@ directly (`-DCMAKE_C_COMPILER=... -DCMAKE_RC_COMPILER=...`).  Output:
 `build/winlinez.exe` — runs natively on Windows, or under Wine on Unix
 (`wine build/winlinez.exe`).
 
+### Open Watcom 2.0
+
+A third toolchain is integrated into CMake directly:
+
+```sh
+cmake -B build -DCOLORLINEZ_TOOLCHAIN=watcom
+cmake --build build
+ctest --test-dir build
+```
+
+The OW branch drives `wcl386`, `wrc` and `wlink` through custom commands
+and produces statically-linked executables in `src/`.  The tools are
+located through `PATH` or the `WATCOM` environment variable (generic
+names like `wrc` are ambiguous on Unix systems, so a `WATCOM`-based hit
+always wins).  Both the ANSI and the Unicode configuration compile and
+run.
+
+This configuration has been verified two ways: with the Linux-hosted OW
+tools, and fully Windows-natively — Windows CMake 4.4 + the Windows OW
+2.0 installer, the whole toolchain running under Wine (`cmake.exe -G
+"Watcom WMake"` → `wmake` → `wcl386`/`wrc`/`wlink`).
+
 ## Test
 
 ```sh

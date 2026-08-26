@@ -11,10 +11,11 @@ cmake_minimum_required(VERSION 3.15)
 # ---------------------------------------------------------------------------
 set(COLORLINEZ_ARCH "i686" CACHE STRING "Target architecture: i686 | x86_64 | aarch64")
 set_property(CACHE COLORLINEZ_ARCH PROPERTY STRINGS i686 x86_64 aarch64)
-set(COLORLINEZ_TOOLCHAIN "mingw" CACHE STRING "mingw | llvm-mingw")
-set_property(CACHE COLORLINEZ_TOOLCHAIN PROPERTY STRINGS mingw llvm-mingw)
+set(COLORLINEZ_TOOLCHAIN "mingw" CACHE STRING "mingw | llvm-mingw | watcom")
+set_property(CACHE COLORLINEZ_TOOLCHAIN PROPERTY STRINGS mingw llvm-mingw watcom)
 
-if(NOT WIN32 AND NOT DEFINED CMAKE_C_COMPILER)
+if(NOT WIN32 AND NOT DEFINED CMAKE_C_COMPILER
+   AND NOT COLORLINEZ_TOOLCHAIN STREQUAL "watcom")
     if(COLORLINEZ_TOOLCHAIN STREQUAL "llvm-mingw")
         set(_cc ${COLORLINEZ_ARCH}-w64-mingw32-clang)
         set(_rc ${COLORLINEZ_ARCH}-w64-mingw32-windres)
@@ -35,10 +36,98 @@ if(NOT WIN32 AND NOT DEFINED CMAKE_C_COMPILER)
     message(STATUS "Cross-building Win32 ${COLORLINEZ_ARCH} (${COLORLINEZ_TOOLCHAIN}) with ${CMAKE_C_COMPILER}")
 endif()
 
+option(COLORLINEZ_UNICODE "Use Unicode (W) APIs for all text" ON)
+
+# ---------------------------------------------------------------------------
+# Open Watcom 2.0 branch: OW's drivers (wcl386/wrc/wlink) do not fit the
+# CMake compiler model, so the build is driven as a custom recipe.
+# Tools are located through PATH or the WATCOM environment variable.
+# ---------------------------------------------------------------------------
+if(COLORLINEZ_TOOLCHAIN STREQUAL "watcom")
+    project(ColorLinez NONE)                 # no host compiler required
+
+    if(CMAKE_HOST_WIN32)
+        set(_ow_bindir binnt)                # Windows-hosted OW tools
+        set(_list_sep "\\;")
+    else()
+        set(_ow_bindir binl)                 # Linux-hosted OW tools
+        set(_list_sep ":")
+    endif()
+
+    if(DEFINED ENV{WATCOM})
+        # prefer the Watcom-owned tools: generic names like "wrc" are
+        # ambiguous on Unix systems
+        find_program(WCL386_EXECUTABLE wcl386 HINTS "$ENV{WATCOM}/${_ow_bindir}")
+        find_program(WRC_EXECUTABLE   wrc    HINTS "$ENV{WATCOM}/${_ow_bindir}")
+        find_program(WLINK_EXECUTABLE wlink HINTS "$ENV{WATCOM}/${_ow_bindir}")
+    else()
+        find_program(WCL386_EXECUTABLE wcl386)
+        find_program(WRC_EXECUTABLE   wrc)
+        find_program(WLINK_EXECUTABLE wlink)
+    endif()
+    if(NOT WCL386_EXECUTABLE OR NOT WRC_EXECUTABLE OR NOT WLINK_EXECUTABLE)
+        message(FATAL_ERROR
+            "Open Watcom tools (wcl386/wrc/wlink) not found in PATH and the "
+            "WATCOM environment variable is not set. Install Open Watcom 2.0, "
+            "add its ${_ow_bindir} directory to PATH, or set WATCOM=<prefix>.")
+    endif()
+    get_filename_component(_ow_bindir_real "${WCL386_EXECUTABLE}" DIRECTORY)
+    get_filename_component(COLORLINEZ_WATCOM_ROOT "${_ow_bindir_real}/.." ABSOLUTE)
+    message(STATUS "Open Watcom: ${COLORLINEZ_WATCOM_ROOT}")
+
+    if(COLORLINEZ_UNICODE)
+        set(_ow_defs -dUNICODE -d_UNICODE)
+    else()
+        set(_ow_defs "")
+    endif()
+
+    set(_ow_env ${CMAKE_COMMAND} -E env
+        "WATCOM=${COLORLINEZ_WATCOM_ROOT}"
+        "INCLUDE=${COLORLINEZ_WATCOM_ROOT}/h/nt${_list_sep}${COLORLINEZ_WATCOM_ROOT}/h"
+        "PATH=${COLORLINEZ_WATCOM_ROOT}/${_ow_bindir}${_list_sep}$ENV{PATH}")
+
+    # outputs land next to the sources (src/ is covered by .gitignore)
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/src/winlinez.exe
+        COMMAND ${_ow_env} ${WCL386_EXECUTABLE} -q -c -bt=nt ${_ow_defs}
+                winlinez.c inflate.c gfxdata.c
+        COMMAND ${_ow_env} ${WRC_EXECUTABLE} -q -r -bt=nt -I. -I.. winlinez.rc
+        COMMAND ${_ow_env} ${WCL386_EXECUTABLE} -q -bt=nt -l=nt_win
+                winlinez.o inflate.o gfxdata.o winlinez.res
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src
+        DEPENDS src/winlinez.c src/inflate.c src/gfxdata.c src/winlinez.rc
+                res/icon.ico res/about_king.bmp res/about_mask.bmp
+        VERBATIM)
+    add_custom_target(winlinez ALL
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/winlinez.exe)
+
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/src/inflate_test.exe
+        COMMAND ${_ow_env} ${WCL386_EXECUTABLE} -q -c -bt=nt ${_ow_defs}
+                test_inflate.c inflate.c gfxdata.c
+        COMMAND ${_ow_env} ${WCL386_EXECUTABLE} -q -bt=nt -l=nt
+                -fe=inflate_test.exe test_inflate.o inflate.o gfxdata.o
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src
+        DEPENDS src/test_inflate.c src/inflate.c src/gfxdata.c
+                ${CMAKE_CURRENT_SOURCE_DIR}/src/winlinez.exe
+        VERBATIM)
+    add_custom_target(inflate_test ALL
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/inflate_test.exe)
+
+    enable_testing()
+    find_program(WINE_EXECUTABLE wine)
+    if(WINE_EXECUTABLE)
+        add_test(NAME inflate_crc
+                 COMMAND ${WINE_EXECUTABLE}
+                 ${CMAKE_CURRENT_SOURCE_DIR}/src/inflate_test.exe)
+    else()
+        message(STATUS "wine not found: the OW inflate_crc test will not run")
+    endif()
+    return()
+endif()
+
 project(ColorLinez C)
 enable_language(RC)
-
-option(COLORLINEZ_UNICODE "Use Unicode (W) APIs for all text" ON)
 
 # ---------------------------------------------------------------------------
 # The game

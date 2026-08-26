@@ -74,6 +74,26 @@ llvm-mingw 需要在 `PATH` 中；也可以直接指定编译器
 `build/winlinez.exe`——Windows 原生运行，Unix 下用
 `wine build/winlinez.exe` 运行。
 
+### Open Watcom 2.0
+
+第三条工具链已直接集成进 CMake：
+
+```sh
+cmake -B build -DCOLORLINEZ_TOOLCHAIN=watcom
+cmake --build build
+ctest --test-dir build
+```
+
+OW 分支通过自定义命令驱动 `wcl386`、`wrc` 和 `wlink`，在 `src/` 生成
+静态链接的可执行文件。工具经 `PATH` 或 `WATCOM` 环境变量定位（`wrc`
+这类通用名在 Unix 系统上有歧义，因此 `WATCOM` 命中的结果优先）。
+ANSI 与 Unicode 两种配置均可编译运行。
+
+该配置经过两种方式验证：Linux 版 OW 工具链，以及完全 Windows 原生
+的方式——Windows CMake 4.4 + Windows 版 OW 2.0 安装包，整条工具链在
+Wine 下运行（`cmake.exe -G "Watcom WMake"` → `wmake` →
+`wcl386`/`wrc`/`wlink`）。
+
 ## 测试
 
 ```sh
