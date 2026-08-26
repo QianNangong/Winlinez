@@ -834,8 +834,9 @@ static BOOL CALLBACK RulesDlgProc(HWND hdlg, UINT msg, WPARAM wp, LPARAM lp)
 {
     switch (msg) {
     case WM_INITDIALOG: return CenterDlg(hdlg);
+    case WM_CLOSE:                        /* 0x4122xx falls through to EndDialog */
     case WM_COMMAND:
-        if (LOWORD(wp) == IDOK) { EndDialog(hdlg, 0); return TRUE; }
+        if (LOWORD(wp) == IDOK || msg == WM_CLOSE) { EndDialog(hdlg, 0); return TRUE; }
         break;
     }
     return FALSE;
@@ -876,8 +877,9 @@ static BOOL CALLBACK ScoresDlgProc(HWND hdlg, UINT msg, WPARAM wp, LPARAM lp)
         return TRUE;
     }
     case WM_INITDIALOG: return CenterDlg(hdlg);
+    case WM_CLOSE:
     case WM_COMMAND:
-        if (LOWORD(wp) == IDOK) { EndDialog(hdlg, 0); return TRUE; }
+        if (LOWORD(wp) == IDOK || msg == WM_CLOSE) { EndDialog(hdlg, 0); return TRUE; }
         break;
     }
     return FALSE;
@@ -891,8 +893,10 @@ static BOOL CALLBACK NameDlgProc(HWND hdlg, UINT msg, WPARAM wp, LPARAM lp)
         CenterDlg(hdlg);
         SetDlgItemTextA(hdlg, IDC_NAME, "Pretender");
         return TRUE;
+    case WM_CLOSE:                              /* original quirk: X behaves
+                                                   like pressing Ok */
     case WM_COMMAND:
-        if (LOWORD(wp) == IDOK) {
+        if (LOWORD(wp) == IDOK || msg == WM_CLOSE) {
             char name[20];
             int  len, i;
 
@@ -943,8 +947,9 @@ static BOOL CALLBACK AboutDlgProc(HWND hdlg, UINT msg, WPARAM wp, LPARAM lp)
         return TRUE;
     }
     case WM_INITDIALOG: return CenterDlg(hdlg);
+    case WM_CLOSE:
     case WM_COMMAND:
-        if (LOWORD(wp) == IDOK) { EndDialog(hdlg, 0); return TRUE; }
+        if (LOWORD(wp) == IDOK || msg == WM_CLOSE) { EndDialog(hdlg, 0); return TRUE; }
         break;
     }
     return FALSE;
