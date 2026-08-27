@@ -1,0 +1,119 @@
+# Cross-build Winlinez with MinGW-w64 on every new commit and publish the
+# binaries to the rolling "continuous" pre-release.
+#
+# Variants (32-bit ships both text-API flavours, 64-bit is Unicode-only):
+#   winlinez-win32-ansi.zip     i686,   COLORLINEZ_UNICODE=OFF
+#   winlinez-win32-unicode.zip  i686,   COLORLINEZ_UNICODE=ON
+#   winlinez-win64-unicode.zip  x86_64, COLORLINEZ_UNICODE=ON
+name: Build and release
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.label }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Win32 32-bit ANSI
+            arch: i686
+            unicode: "OFF"
+            asset: winlinez-win32-ansi.zip
+          - label: Win32 32-bit Unicode
+            arch: i686
+            unicode: "ON"
+            asset: winlinez-win32-unicode.zip
+          - label: Win64 64-bit Unicode
+            arch: x86_64
+            unicode: "ON"
+            asset: winlinez-win64-unicode.zip
+    env:
+      WINEDEBUG: -all
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install MinGW-w64 cross toolchain and Wine
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            mingw-w64 wine64 wine32:i386 zip
+
+      - name: Configure
+        run: >
+          cmake -B build
+          -DCOLORLINEZ_ARCH=${{ matrix.arch }}
+          -DCOLORLINEZ_UNICODE=${{ matrix.unicode }}
+
+      - name: Build
+        run: cmake --build build --parallel "$(nproc)"
+
+      - name: Regression test (inflate CRC, under Wine)
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Package
+        env:
+          ASSET: ${{ matrix.asset }}
+        run: |
+          mkdir dist
+          cp build/winlinez.exe README.md dist/
+          (cd dist && zip -q "../$ASSET" winlinez.exe README.md)
+          sha256sum "$ASSET" > "$ASSET.sha256"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: |
+            ${{ matrix.asset }}
+            ${{ matrix.asset }}.sha256
+          if-no-files-found: error
+
+  release:
+    name: Publish rolling release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Collect artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Update "continuous" pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          short="${SHA::7}"
+          title=$(gh api "repos/$GH_REPO/commits/$SHA" --jq '.commit.message' | head -n1)
+          notes=$(cat <<EOF
+          Automated MinGW-w64 builds from commit $short on $REF_NAME: "$title"
+
+          * winlinez-win32-ansi.zip - 32-bit (i686), ANSI text APIs
+          * winlinez-win32-unicode.zip - 32-bit (i686), Unicode text APIs
+          * winlinez-win64-unicode.zip - 64-bit (x86_64), Unicode text APIs
+
+          SHA-256 checksums are provided as matching .sha256 files.
+          EOF
+          )
+          # replace the previous rolling release and retag it at this commit
+          gh release delete continuous --yes --cleanup-tag >/dev/null 2>&1 || true
+          gh release create continuous dist/* \
+            --target "$SHA" --prerelease \
+            --title "Continuous build ($short)" \
+            --notes "$notes"
